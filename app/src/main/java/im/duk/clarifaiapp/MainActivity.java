@@ -4,6 +4,11 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PointF;
+import android.media.FaceDetector;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -68,8 +73,31 @@ public class MainActivity extends ActionBarActivity {
 //            Bitmap photo = (Bitmap) extras.get("data");
 
 //            imageView.setImageBitmap(photo);
-            Bitmap photo = BitmapFactory.decodeFile(imageFileLocation);
-            imageView.setImageBitmap(photo);
+            BitmapFactory.Options bitmap_options = new BitmapFactory.Options();
+            bitmap_options.inPreferredConfig = Bitmap.Config.RGB_565;
+
+            Bitmap photo = BitmapFactory.decodeFile(imageFileLocation, bitmap_options);
+            Bitmap.Config bitmap_config = photo.getConfig();
+            if(bitmap_config == null) {
+                bitmap_config = Bitmap.Config.RGB_565;
+            }
+
+            Bitmap drawingPhoto = photo.copy(bitmap_config, true);
+
+            FaceDetector faceDetector = new FaceDetector(photo.getWidth(), photo.getHeight(), 3);
+            FaceDetector.Face[] faces;
+            faces = new FaceDetector.Face[3];
+            int faceCount = faceDetector.findFaces(drawingPhoto, faces);
+            Toast.makeText(this, "Face count:" + faceCount, Toast.LENGTH_SHORT).show();
+            Canvas canvas = new Canvas(drawingPhoto);
+            PointF point = new PointF();
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);
+            paint.setAlpha(100);
+            faces[0].getMidPoint(point);
+            canvas.drawCircle(point.x, point.y, faces[0].eyesDistance(), paint);
+            imageView.setImageBitmap(drawingPhoto);
+
             new Thread(new Runnable() {
                 @Override
                 public void run() {
