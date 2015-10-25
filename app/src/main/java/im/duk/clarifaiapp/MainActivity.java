@@ -94,11 +94,14 @@ public class MainActivity extends ActionBarActivity {
 
             final Bitmap drawingPhoto = photo.copy(bitmap_config, true);
 
-            FaceDetector faceDetector = new FaceDetector(photo.getWidth(), photo.getHeight(), 3);
+            FaceDetector faceDetector = new FaceDetector(photo.getWidth(), photo.getHeight(), 1);
             FaceDetector.Face[] faces;
-            faces = new FaceDetector.Face[3];
+            faces = new FaceDetector.Face[1];
             int faceCount = faceDetector.findFaces(drawingPhoto, faces);
-            Toast.makeText(this, "Face count:" + faceCount, Toast.LENGTH_SHORT).show();
+            if (faceCount == 0) {
+                Toast.makeText(this, "Did not find a face!", Toast.LENGTH_LONG).show();
+                return;
+            }
             final Canvas canvas = new Canvas(drawingPhoto);
 //            PointF point = new PointF();
 //            Paint paint = new Paint();
