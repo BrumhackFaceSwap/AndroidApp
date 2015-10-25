@@ -194,7 +194,7 @@ public class MainActivity extends ActionBarActivity {
                             highestAnimal = key;
                         }
                     }
-                    final String copyOfHighestAnimal = highestAnimal;
+                    final String copyOfHighestAnimal = "CatHead";
                     final double copyOfHighestScore = highestScore.doubleValue();
                     final Map<String, String> copyOfImageMap = imageMap;
                     MainActivity.this.runOnUiThread(new Runnable() {
@@ -204,6 +204,7 @@ public class MainActivity extends ActionBarActivity {
                             int picId = res.getIdentifier(copyOfImageMap.get(copyOfHighestAnimal), "drawable", getApplicationContext().getPackageName());
 
                             Bitmap bitmapDrawable = BitmapFactory.decodeResource(res, picId);
+                            bitmapDrawable = Bitmap.createScaledBitmap(bitmapDrawable, (int)face.eyesDistance() * 3, (int)face.eyesDistance() * 3, false);
                             Paint paint = new Paint();
                             PointF point = new PointF();
                             face.getMidPoint(point);
