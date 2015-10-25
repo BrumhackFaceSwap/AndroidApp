@@ -14,22 +14,27 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Base64;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.clarifai.api.ClarifaiClient;
-import com.clarifai.api.RecognitionRequest;
-import com.clarifai.api.RecognitionResult;
-import com.clarifai.api.Tag;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -82,7 +87,7 @@ public class MainActivity extends ActionBarActivity {
                 bitmap_config = Bitmap.Config.RGB_565;
             }
 
-            Bitmap drawingPhoto = photo.copy(bitmap_config, true);
+            final Bitmap drawingPhoto = photo.copy(bitmap_config, true);
 
             FaceDetector faceDetector = new FaceDetector(photo.getWidth(), photo.getHeight(), 3);
             FaceDetector.Face[] faces;
@@ -101,24 +106,82 @@ public class MainActivity extends ActionBarActivity {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    ClarifaiClient clarifaiClient = new ClarifaiClient("nSB3QSeOYfxKkSAuGXHpodxsKoM6mNcbzEp8su0z", "otytNX9yjKyw4AA82r9uTVMjqefIopIWgSN1qm7g");
-                    List<RecognitionResult> results = clarifaiClient.recognize(new RecognitionRequest(new File(imageFileLocation)));
-                    final List<Tag> tags = results.get(0).getTags();
-                    final Tag[] tagarr = tags.toArray(new Tag[tags.size()]);
+                    String[] tags = new String[] {
+                            "BearHead",
+                            "CatHead",
+                            "ChickenHead",
+                            "CowHead",
+                            "DeerHead",
+                            "DogHead",
+                            "DuckHead",
+                            "EagleHead",
+                            "ElephantHead",
+                            "HumanHead",
+                            "LionHead",
+                            "MonkeyHead",
+                            "MouseHead",
+                            "Natural",
+                            "PandaHead",
+                            "PigeonHead",
+                            "PigHead",
+                            "RabbitHead",
+                            "SheepHead",
+                            "TigerHead",
+                            "WolfHead"
+                    };
+
+                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    drawingPhoto.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+                    byte[] byteArray = byteArrayOutputStream .toByteArray();
+                    String base64EncodedImage = Base64.encodeToString(byteArray, Base64.DEFAULT);
+
+                    final ArrayList<String> responseResults = new ArrayList<String>();
+
+                    String accessToken = "y6fHD7OLjZJUj8n4SDpL4VvaOmFTyl";
+
+                    String tag = tags[0];
+//                    for (String tag : tags) {
+                        HttpClient httpClient = new DefaultHttpClient();
+                        HttpPost httpPost = new HttpPost("https://api-alpha.clarifai.com/v1/curator/concepts/default/" + tag + "/predict");
+                        httpPost.setHeader("Authorization", "Bearer " + accessToken);
+                        httpPost.setHeader("Content-type", "application/json");
+
+                    try {
+                        StringEntity se = new StringEntity("{\"urls\":[\"http://a3.files.biography.com/image/upload/c_fill,cs_srgb,dpr_1.0,g_face,h_300,q_80,w_300/MTE5NDg0MDU1MTUyNzIzNDcx.jpg\"]}");
+                        httpPost.setEntity(se);
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+
+                    /*
+                        List<NameValuePair> nameValuePair = new ArrayList<NameValuePair>(1);
+                        nameValuePair.add(new BasicNameValuePair("encoded_data", base64EncodedImage));
+                        try {
+                            httpPost.setEntity(new UrlEncodedFormEntity(nameValuePair));
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                    */
+
+                        try {
+                            HttpResponse response = httpClient.execute(httpPost);
+                            responseResults.add(EntityUtils.toString(response.getEntity()));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+//                    }
+
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            //Toast.makeText(MainActivity.this, tagarr[0].getName(), Toast.LENGTH_SHORT).show();
-                            String message = "";
-                            for (Tag tag : tags) {
-                                message += tag.getName() + ": " + tag.getProbability() + "\n";
-
+                            StringBuilder sb = new StringBuilder("\n");
+                            for (String s : responseResults) {
+                                sb.append(s);
                             }
-
-
                             new AlertDialog.Builder(MainActivity.this)
                                     .setTitle("Possible in the image:")
-                                    .setMessage(message)
+                                    .setMessage(sb.toString())
 //                                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 //                                        public void onClick(DialogInterface dialog, int which) {
 //                                            // continue with delete
