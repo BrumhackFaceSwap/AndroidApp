@@ -5,9 +5,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.PointF;
 import android.media.FaceDetector;
 import android.net.Uri;
 import android.os.Bundle;
@@ -100,12 +97,12 @@ public class MainActivity extends ActionBarActivity {
             int faceCount = faceDetector.findFaces(drawingPhoto, faces);
             Toast.makeText(this, "Face count:" + faceCount, Toast.LENGTH_SHORT).show();
             Canvas canvas = new Canvas(drawingPhoto);
-            PointF point = new PointF();
-            Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setAlpha(100);
-            faces[0].getMidPoint(point);
-            canvas.drawCircle(point.x, point.y, faces[0].eyesDistance(), paint);
+//            PointF point = new PointF();
+//            Paint paint = new Paint();
+//            paint.setColor(Color.RED);
+//            paint.setAlpha(100);
+//            faces[0].getMidPoint(point);
+            //canvas.drawCircle(point.x, point.y, faces[0].eyesDistance(), paint);
             imageView.setImageBitmap(drawingPhoto);
 
             new Thread(new Runnable() {
@@ -117,21 +114,14 @@ public class MainActivity extends ActionBarActivity {
                             "ChickenHead",
                             "CowHead",
                             "DeerHead",
-//                            "DogHead",
-//                            "DuckHead",
-//                            "EagleHead",
-//                            "ElephantHead",
-//                            "LionHead",
-//                            "MonkeyHead",
-//                            "MouseHead",
-//                            "PandaHead",
-//                            "PigeonHead",
-//                            "PigHead",
-//                            "RabbitHead",
-//                            "SheepHead",
-//                            "TigerHead",
-                            "WolfHead"
                     };
+                    Map<String, String> imageMap = new HashMap<String, String>();
+                    imageMap.put("BearHead", "bear.png");
+                    imageMap.put("CatHead", "cat.png");
+                    imageMap.put("ChickenHead", "chicken.png");
+                    imageMap.put("CowHead", "cow.png");
+                    imageMap.put("DeerHead", "deer.png");
+
 
                     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                     drawingPhoto.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
@@ -187,20 +177,29 @@ public class MainActivity extends ActionBarActivity {
                             e.printStackTrace();
                         }
                     }
-
+                    Double highestScore = null;
+                    String highestAnimal = null;
+                    for(String key : scoreMap.keySet()) {
+                        Double currentScore = scoreMap.get(key);
+                        if (highestScore != null) {
+                            if(currentScore.doubleValue() > highestScore.doubleValue()) {
+                                highestScore = currentScore;
+                                highestAnimal = key;
+                            }
+                        } else {
+                            highestScore = currentScore;
+                            highestAnimal = key;
+                        }
+                    }
+                    final String copyOfHighestAnimal = highestAnimal;
+                    final double copyOfHighestScore = highestScore.doubleValue();
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            StringBuilder sb = new StringBuilder();
-                            for (String s : scoreMap.keySet()) {
-                                sb.append(s);
-                                sb.append(": ");
-                                sb.append(scoreMap.get(s));
-                                sb.append("\n");
-                            }
+
                             new AlertDialog.Builder(MainActivity.this)
                                     .setTitle("Possible in the image:")
-                                    .setMessage(sb.toString())
+                                    .setMessage(copyOfHighestAnimal + ": " + copyOfHighestScore)
 //                                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 //                                        public void onClick(DialogInterface dialog, int which) {
 //                                            // continue with delete
