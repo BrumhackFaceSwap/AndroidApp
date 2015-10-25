@@ -2,9 +2,12 @@ package im.duk.clarifaiapp;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PointF;
 import android.media.FaceDetector;
 import android.net.Uri;
 import android.os.Bundle;
@@ -96,7 +99,7 @@ public class MainActivity extends ActionBarActivity {
             faces = new FaceDetector.Face[3];
             int faceCount = faceDetector.findFaces(drawingPhoto, faces);
             Toast.makeText(this, "Face count:" + faceCount, Toast.LENGTH_SHORT).show();
-            Canvas canvas = new Canvas(drawingPhoto);
+            final Canvas canvas = new Canvas(drawingPhoto);
 //            PointF point = new PointF();
 //            Paint paint = new Paint();
 //            paint.setColor(Color.RED);
@@ -104,7 +107,7 @@ public class MainActivity extends ActionBarActivity {
 //            faces[0].getMidPoint(point);
             //canvas.drawCircle(point.x, point.y, faces[0].eyesDistance(), paint);
             imageView.setImageBitmap(drawingPhoto);
-
+            final FaceDetector.Face face = faces[0];
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -116,11 +119,11 @@ public class MainActivity extends ActionBarActivity {
                             "DeerHead",
                     };
                     Map<String, String> imageMap = new HashMap<String, String>();
-                    imageMap.put("BearHead", "bear.png");
-                    imageMap.put("CatHead", "cat.png");
-                    imageMap.put("ChickenHead", "chicken.png");
-                    imageMap.put("CowHead", "cow.png");
-                    imageMap.put("DeerHead", "deer.png");
+                    imageMap.put("BearHead", "bear");
+                    imageMap.put("CatHead", "cat");
+                    imageMap.put("ChickenHead", "chicken");
+                    imageMap.put("CowHead", "cow");
+                    imageMap.put("DeerHead", "deer");
 
 
                     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -193,9 +196,18 @@ public class MainActivity extends ActionBarActivity {
                     }
                     final String copyOfHighestAnimal = highestAnimal;
                     final double copyOfHighestScore = highestScore.doubleValue();
+                    final Map<String, String> copyOfImageMap = imageMap;
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            Resources res = getResources();
+                            int picId = res.getIdentifier(copyOfImageMap.get(copyOfHighestAnimal), "drawable", getApplicationContext().getPackageName());
+
+                            Bitmap bitmapDrawable = BitmapFactory.decodeResource(res, picId);
+                            Paint paint = new Paint();
+                            PointF point = new PointF();
+                            face.getMidPoint(point);
+                            canvas.drawBitmap(bitmapDrawable, point.x - (bitmapDrawable.getWidth() / 2), point.y - (bitmapDrawable.getHeight() / 2), paint);
 
                             new AlertDialog.Builder(MainActivity.this)
                                     .setTitle("Possible in the image:")
