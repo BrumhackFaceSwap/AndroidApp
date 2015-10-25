@@ -27,6 +27,9 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -35,6 +38,8 @@ import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -112,21 +117,19 @@ public class MainActivity extends ActionBarActivity {
                             "ChickenHead",
                             "CowHead",
                             "DeerHead",
-                            "DogHead",
-                            "DuckHead",
-                            "EagleHead",
-                            "ElephantHead",
-                            "HumanHead",
-                            "LionHead",
-                            "MonkeyHead",
-                            "MouseHead",
-                            "Natural",
-                            "PandaHead",
-                            "PigeonHead",
-                            "PigHead",
-                            "RabbitHead",
-                            "SheepHead",
-                            "TigerHead",
+//                            "DogHead",
+//                            "DuckHead",
+//                            "EagleHead",
+//                            "ElephantHead",
+//                            "LionHead",
+//                            "MonkeyHead",
+//                            "MouseHead",
+//                            "PandaHead",
+//                            "PigeonHead",
+//                            "PigHead",
+//                            "RabbitHead",
+//                            "SheepHead",
+//                            "TigerHead",
                             "WolfHead"
                     };
 
@@ -139,8 +142,8 @@ public class MainActivity extends ActionBarActivity {
 
                     String accessToken = "y6fHD7OLjZJUj8n4SDpL4VvaOmFTyl";
 
-                    String tag = tags[0];
-//                    for (String tag : tags) {
+//                    String tag = tags[0];
+                    for (String tag : tags) {
                         HttpClient httpClient = new DefaultHttpClient();
                         HttpPost httpPost = new HttpPost("https://api-alpha.clarifai.com/v1/curator/concepts/default/" + tag + "/predict");
                         httpPost.setHeader("Authorization", "Bearer " + accessToken);
@@ -170,14 +173,30 @@ public class MainActivity extends ActionBarActivity {
                             e.printStackTrace();
                         }
 
-//                    }
+                    }
+                    final Map<String, Double> scoreMap = new HashMap<String, Double>();
+                    for(int i = 0; i < tags.length; ++i) {
+                        try {
+                            JSONObject jso = new JSONObject(responseResults.get(i));
+                            String animal = tags[i];
+                            JSONArray jsa = (JSONArray) jso.get("urls");
+                            Double score = (Double)((JSONObject) jsa.get(0)).get("score");
+                            scoreMap.put(animal, score);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
 
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            StringBuilder sb = new StringBuilder("\n");
-                            for (String s : responseResults) {
+                            StringBuilder sb = new StringBuilder();
+                            for (String s : scoreMap.keySet()) {
                                 sb.append(s);
+                                sb.append(": ");
+                                sb.append(scoreMap.get(s));
+                                sb.append("\n");
                             }
                             new AlertDialog.Builder(MainActivity.this)
                                     .setTitle("Possible in the image:")
