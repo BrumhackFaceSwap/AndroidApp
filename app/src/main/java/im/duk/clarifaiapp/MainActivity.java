@@ -197,7 +197,7 @@ public class MainActivity extends ActionBarActivity {
                             highestAnimal = key;
                         }
                     }
-                    final String copyOfHighestAnimal = "CatHead";
+                    final String copyOfHighestAnimal = highestAnimal;
                     final double copyOfHighestScore = highestScore.doubleValue();
                     final Map<String, String> copyOfImageMap = imageMap;
                     MainActivity.this.runOnUiThread(new Runnable() {
