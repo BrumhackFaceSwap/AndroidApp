@@ -24,4 +24,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'com.clarifai:clarifai-api-java:1.1.0'
+    compile files('src/main/res/cloudinary-android-1.2.2.jar')
+    compile files('src/main/res/cloudinary-core-1.2.2.jar')
+    compile files('src/main/res/commons-codec-1.10.jar')
 }
