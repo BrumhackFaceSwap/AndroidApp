@@ -2,10 +2,10 @@ package im.duk.clarifaiapp;
 
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.media.FaceDetector;
@@ -21,6 +21,13 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.Uploader;
+import com.cloudinary.utils.ObjectUtils;
+
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -33,7 +40,10 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -44,6 +54,7 @@ import java.util.Map;
 public class MainActivity extends ActionBarActivity {
 
     private static final int ACTIVITY_START_CAMERA_APP = 0;
+    private static int PHOTO_ID = 0;
     private ImageView imageView;
     private String imageFileLocation;
 
@@ -94,23 +105,20 @@ public class MainActivity extends ActionBarActivity {
 
             final Bitmap drawingPhoto = photo.copy(bitmap_config, true);
 
-            FaceDetector faceDetector = new FaceDetector(photo.getWidth(), photo.getHeight(), 1);
+            FaceDetector faceDetector = new FaceDetector(photo.getWidth(), photo.getHeight(), 3);
             FaceDetector.Face[] faces;
-            faces = new FaceDetector.Face[1];
+            faces = new FaceDetector.Face[3];
             int faceCount = faceDetector.findFaces(drawingPhoto, faces);
-            if (faceCount == 0) {
-                Toast.makeText(this, "Did not find a face!", Toast.LENGTH_LONG).show();
-                return;
-            }
-            final Canvas canvas = new Canvas(drawingPhoto);
-//            PointF point = new PointF();
-//            Paint paint = new Paint();
-//            paint.setColor(Color.RED);
-//            paint.setAlpha(100);
-//            faces[0].getMidPoint(point);
-            //canvas.drawCircle(point.x, point.y, faces[0].eyesDistance(), paint);
+            Toast.makeText(this, "Face count:" + faceCount, Toast.LENGTH_SHORT).show();
+            Canvas canvas = new Canvas(drawingPhoto);
+            PointF point = new PointF();
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);
+            paint.setAlpha(100);
+            faces[0].getMidPoint(point);
+            canvas.drawCircle(point.x, point.y, faces[0].eyesDistance(), paint);
             imageView.setImageBitmap(drawingPhoto);
-            final FaceDetector.Face face = faces[0];
+
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -120,20 +128,30 @@ public class MainActivity extends ActionBarActivity {
                             "ChickenHead",
                             "CowHead",
                             "DeerHead",
+//                            "DogHead",
+//                            "DuckHead",
+//                            "EagleHead",
+//                            "ElephantHead",
+//                            "LionHead",
+//                            "MonkeyHead",
+//                            "MouseHead",
+//                            "PandaHead",
+//                            "PigeonHead",
+//                            "PigHead",
+//                            "RabbitHead",
+//                            "SheepHead",
+//                            "TigerHead",
+                            "WolfHead"
                     };
-                    Map<String, String> imageMap = new HashMap<String, String>();
-                    imageMap.put("BearHead", "bear");
-                    imageMap.put("CatHead", "cat");
-                    imageMap.put("ChickenHead", "chicken");
-                    imageMap.put("CowHead", "cow");
-                    imageMap.put("DeerHead", "deer");
-
 
                     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                     drawingPhoto.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
                     byte[] byteArray = byteArrayOutputStream .toByteArray();
                     String base64EncodedImage = Base64.encodeToString(byteArray, Base64.DEFAULT);
 
+
+
+                    String url = uploadPhotoToCloud(imageFileLocation);
                     final ArrayList<String> responseResults = new ArrayList<String>();
 
                     String accessToken = "y6fHD7OLjZJUj8n4SDpL4VvaOmFTyl";
@@ -146,7 +164,7 @@ public class MainActivity extends ActionBarActivity {
                         httpPost.setHeader("Content-type", "application/json");
 
                     try {
-                        StringEntity se = new StringEntity("{\"urls\":[\"http://a3.files.biography.com/image/upload/c_fill,cs_srgb,dpr_1.0,g_face,h_300,q_80,w_300/MTE5NDg0MDU1MTUyNzIzNDcx.jpg\"]}");
+                        StringEntity se = new StringEntity("{\"urls\":[\""+url+"\"]}");
                         httpPost.setEntity(se);
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
@@ -183,38 +201,20 @@ public class MainActivity extends ActionBarActivity {
                             e.printStackTrace();
                         }
                     }
-                    Double highestScore = null;
-                    String highestAnimal = null;
-                    for(String key : scoreMap.keySet()) {
-                        Double currentScore = scoreMap.get(key);
-                        if (highestScore != null) {
-                            if(currentScore.doubleValue() > highestScore.doubleValue()) {
-                                highestScore = currentScore;
-                                highestAnimal = key;
-                            }
-                        } else {
-                            highestScore = currentScore;
-                            highestAnimal = key;
-                        }
-                    }
-                    final String copyOfHighestAnimal = highestAnimal;
-                    final double copyOfHighestScore = highestScore.doubleValue();
-                    final Map<String, String> copyOfImageMap = imageMap;
+
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Resources res = getResources();
-                            int picId = res.getIdentifier(copyOfImageMap.get(copyOfHighestAnimal), "drawable", getApplicationContext().getPackageName());
-
-                            Bitmap bitmapDrawable = BitmapFactory.decodeResource(res, picId);
-                            Paint paint = new Paint();
-                            PointF point = new PointF();
-                            face.getMidPoint(point);
-                            canvas.drawBitmap(bitmapDrawable, point.x - (bitmapDrawable.getWidth() / 2), point.y - (bitmapDrawable.getHeight() / 2), paint);
-
+                            StringBuilder sb = new StringBuilder();
+                            for (String s : scoreMap.keySet()) {
+                                sb.append(s);
+                                sb.append(": ");
+                                sb.append(scoreMap.get(s));
+                                sb.append("\n");
+                            }
                             new AlertDialog.Builder(MainActivity.this)
                                     .setTitle("Possible in the image:")
-                                    .setMessage(copyOfHighestAnimal + ": " + copyOfHighestScore)
+                                    .setMessage(sb.toString())
 //                                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 //                                        public void onClick(DialogInterface dialog, int which) {
 //                                            // continue with delete
@@ -257,5 +257,45 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public String uploadPhotoToCloud(String  drawingPhoto){
+        PHOTO_ID++;
+        /*Map config = new HashMap();
+        config.put("cloud_name", "dm7d5ivl9");
+        Cloudinary cloudinary = new Cloudinary(config);*/
+
+        Map config = new HashMap();
+        config.put("cloud_name", "dm7d5ivl9");
+        config.put("api_key", "574733482877597");
+        config.put("api_secret", "");
+        Cloudinary cloudinary = new Cloudinary(config);
+
+        /*String imageIdentifier = "image:upload:rtemlekmgr13"+PHOTO_ID+".jpg";
+        long timestamp = System.currentTimeMillis() / 1000L;
+        String publicId = "sample"+PHOTO_ID;
+        String sortedParameters = "public_id="+publicId+"&timestamp="+timestamp;
+        String signature = new String(Hex.encodeHex(DigestUtils.sha1(sortedParameters)));
+        //System.out.println(new String(Hex.encodeHex(DigestUtils.sha1("public_id=sample&timestamp=1315060510abcd"))));
+        try {
+            Uploader up = cloudinary.uploader().upload(drawingPhoto, ObjectUtils.asMap("public_id", publicId, "signature", signature, "timestamp", timestamp, "api_key", "574733482877597"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        String[] components = imageIdentifier.split(":");
+
+        String url = cloudinary.url().resourceType(components[0]).type(components[1]).generate(components[2]);
+        System.out.println(url);*/
+        String url = "";
+        try {
+            Map uploadResult = cloudinary.uploader().upload(drawingPhoto, ObjectUtils.emptyMap());
+            url = String.valueOf(uploadResult.get("url"));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return url;
     }
 }
